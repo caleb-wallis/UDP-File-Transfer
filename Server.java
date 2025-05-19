@@ -1,8 +1,7 @@
 import java.io.*;
 import java.net.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.Random;
+
 
 public class Server {
     public static void main(String[] args) {
@@ -29,19 +28,18 @@ public class Server {
                 serverSocket.receive(requestPacket);
 
                 String receivedData = new String(requestPacket.getData(), 0, requestPacket.getLength());
-                System.out.println("Received date from client: " + receivedData);
-
+                System.out.println("Received file from client: " + receivedData);
 
                 // Process the date and calculate the weekday
-                String response = processDate(receivedData);
+                String[] dataArr = receivedData.split(" ");
+                String file = dataArr[1];
+                String response = processFile(file);
 
-                
                 // Send the response back to the client
                 byte[] responseData = response.getBytes();
                 InetAddress clientAddress = requestPacket.getAddress();
                 int clientPort = requestPacket.getPort();
-                DatagramPacket responsePacket = new DatagramPacket(responseData, responseData.length, 
-                    clientAddress, clientPort);
+                DatagramPacket responsePacket = new DatagramPacket(responseData, responseData.length, clientAddress, clientPort);
                 serverSocket.send(responsePacket);
                 System.out.println("Response sent to client: " + response);
             }
@@ -50,13 +48,19 @@ public class Server {
         }
     }
 
-    private static String processDate(String date) {
+    private static String processFile(String file) {
+        String response = String.format("ERR %s NOT_FOUND", file);
+        File f = new File(file);
         try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            Date dateObject = dateFormat.parse(date);
-            SimpleDateFormat dayFormat = new SimpleDateFormat("EEEE");
-            return dayFormat.format(dateObject);
-        } catch (ParseException e) {
+            if(f.exists()){
+                Random r = new Random();
+                int max=51000, min=50000;
+                int port = r.nextInt(max - min + 1) + min;
+                response = String.format("OK %s %d %d", file, f.length(), port);
+            }
+            
+            return response;
+        } catch (Exception e) {
             return "Invalid date format. Use YYYY-MM-DD.";
         }
     }
