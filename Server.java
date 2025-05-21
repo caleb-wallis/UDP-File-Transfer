@@ -31,30 +31,28 @@ public class Server {
 
                 String[] dataArr = receivedData.split(" ");
                 String file = dataArr[1];
-                String response = processFile(file);
 
-                // Send the response back to the client
+                // If file exists
+                String response = String.format("ERR %s NOT_FOUND", file);
+                File f = new File(file);
+                if(f.exists()){
+                    // Create new socket
+                    DatagramSocket threadSocket = createSocket();
+
+                    // Set response
+                    response = String.format("OK %s %d %d", file, f.length(), threadSocket.getPort());
+
+                    // Create thread with new socket and file
+                    new Thread(() -> sendFile(f, threadSocket)).start();
+                }
+
+                // Send a response back to the client
                 sendResponse(response, requestPacket, serverSocket);
+
+                // Repeat
             }
         } catch (IOException e) {
             System.out.println("Server error: " + e.getMessage());
-        }
-    }
-
-    private static String processFile(String file) {
-        String response = String.format("ERR %s NOT_FOUND", file);
-        File f = new File(file);
-        try {
-            if(f.exists()){
-                Random r = new Random();
-                int max=51000, min=50000;
-                int port = r.nextInt(max - min + 1) + min;
-                response = String.format("OK %s %d %d", file, f.length(), port);
-            }
-            
-            return response;
-        } catch (Exception e) {
-            return "Invalid date format. Use YYYY-MM-DD.";
         }
     }
 
@@ -84,5 +82,23 @@ public class Server {
 
         }
 
+    }
+
+    private static DatagramSocket createSocket(){
+        try{
+            Random r = new Random();
+            int max=51000, min=50000;
+            int port = r.nextInt(max - min + 1) + min;
+            DatagramSocket socket = new DatagramSocket(port);
+            return socket;
+
+        }
+        catch(Exception e){
+            return null;   
+        }    
+    }
+
+    private static void sendFile(File file, DatagramSocket socket){
+        System.out.println("Thread was made");
     }
 }
