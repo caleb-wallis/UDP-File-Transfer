@@ -29,20 +29,10 @@ public class Client {
                 String request = String.format("DOWNLOAD %s", file);
 
                 // Send download request to the server
-                byte[] sendData = request.getBytes();
-                InetAddress serverAddress = InetAddress.getByName(hostname);
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, port);
-                clientSocket.send(sendPacket);
-
-                System.out.println("File sent to the server.");
+                sendRequest(request, clientSocket, port);
 
                 // Receive the response from the server
-                byte[] receiveData = new byte[1024];
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                clientSocket.receive(receivePacket);
-
-                String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                System.out.println("Server response: " + response);
+                getResponse(clientSocket);
             }
 
             scanner.close();
@@ -50,5 +40,30 @@ public class Client {
         } catch (Exception e) {
             System.out.println("Client error: " + e.getMessage());
         }
+    }
+
+    public static void sendRequest(String request, DatagramSocket clientSocket, int port){
+        try{
+            String hostname = "localhost";
+            byte[] sendData = request.getBytes();
+            InetAddress serverAddress = InetAddress.getByName(hostname);
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, port);
+            clientSocket.send(sendPacket);
+
+            System.out.println("Request sent to the server.");
+        }
+        catch(Exception e){System.out.println(e);}
+    }
+
+    public static void getResponse(DatagramSocket clientSocket){
+        try{
+            byte[] receiveData = new byte[1024];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            clientSocket.receive(receivePacket);
+            String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+
+            System.out.println("Server response: " + response);
+        }
+        catch(Exception e){System.out.println(e);}
     }
 }
