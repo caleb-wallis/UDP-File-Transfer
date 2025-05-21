@@ -20,7 +20,7 @@ public class Server {
         }
         try {
             DatagramSocket serverSocket = new DatagramSocket(port);
-            System.out.println("Server is listening on port " + port);
+            System.out.println("Server is listening on port " + port + ": LOCAL PORT : " + serverSocket.getLocalPort());
 
             byte[] buffer = new byte[1024];
             while (true) {
@@ -40,10 +40,10 @@ public class Server {
                     DatagramSocket threadSocket = createSocket();
 
                     // Set response
-                    response = String.format("OK %s %d %d", file, f.length(), threadSocket.getPort());
+                    response = String.format("OK %s SIZE %d PORT %d", file, f.length(), threadSocket.getLocalPort());
 
                     // Create thread with new socket and file
-                    new Thread(() -> sendFile(f, client, threadSocket)).start();
+                    new Thread(() -> sendFile(file, client, threadSocket)).start();
                 }
 
                 // Send a response back to the client
@@ -59,9 +59,9 @@ public class Server {
     private static String getRequest(DatagramPacket requestPacket, DatagramSocket serverSocket){
         try{
             serverSocket.receive(requestPacket);
-            String receivedData = new String(requestPacket.getData(), 0, requestPacket.getLength());
-            System.out.println("Received file from client: " + receivedData);
-            return receivedData;
+            String request = new String(requestPacket.getData(), 0, requestPacket.getLength());
+            System.out.println("Request from client: " + request);
+            return request;
         }
         catch(Exception e){
             return "ERR GET Request Error";
@@ -81,7 +81,6 @@ public class Server {
         catch(Exception e){
 
         }
-
     }
 
     private static DatagramSocket createSocket(){
@@ -90,15 +89,16 @@ public class Server {
             int max=51000, min=50000;
             int port = r.nextInt(max - min + 1) + min;
             DatagramSocket socket = new DatagramSocket(port);
+            System.out.println("Created Socket on Port: " + socket.getLocalPort());
             return socket;
-
         }
         catch(Exception e){
+            System.out.println(e);
             return null;   
         }    
     }
 
-    private static void sendFile(File file, DatagramPacket client, DatagramSocket socket){
+    private static void sendFile(String file, DatagramPacket client, DatagramSocket socket){
         System.out.println("Thread was made");
         boolean get = true;
 
@@ -108,7 +108,7 @@ public class Server {
             String[] dataArr = request.split(" ");
 
             // Check 3rd value for CLOSE or GET
-            String operation = dataArr[3];
+            String operation = dataArr[2];
 
             // Perform Operation
             String response = "";
@@ -116,20 +116,18 @@ public class Server {
             if(operation.equals("GET")){
                 int start = Integer.parseInt(dataArr[4]);
                 int end = Integer.parseInt(dataArr[6]);
-
-                // Send file data back
-                int startPosition = start; // Read from the 11th byte
                 int bytesToRead = end - start;
 
-                try (RandomAccessFile randFile = new RandomAccessFile(file.getName(), "r")) {
-                    randFile.seek(startPosition);
+                // Send file data back
+                try (RandomAccessFile randFile = new RandomAccessFile(file, "r")) {
+                    randFile.seek(start);
 
                     byte[] buffer = new byte[bytesToRead];
                     int bytesRead = randFile.read(buffer);
 
                     if (bytesRead != -1) {
                         String content = new String(buffer, 0, bytesRead);
-                        response = String.format("FILE %s OK START %d END %d DATA %s", file.getName(), start, end, content);
+                        response = String.format("FILE %s OK START %d END %d DATA %s", file, start, end, content);
                         sendResponse(response, client, socket);
                     } else {
                         System.out.println("End of file reached before reading any bytes.");
@@ -139,7 +137,7 @@ public class Server {
             }
             else{
                 get = false;
-                response = String.format("FILE %s CLOSE_OK", file.getName());
+                response = String.format("FILE %s CLOSE_OK", file);
                 sendResponse(response, client, socket);
             }
         }
