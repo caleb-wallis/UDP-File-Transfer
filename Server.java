@@ -24,10 +24,10 @@ public class Server {
 
             byte[] buffer = new byte[1024];
             while (true) {
-                DatagramPacket requestPacket = new DatagramPacket(buffer, buffer.length);
+                DatagramPacket client = new DatagramPacket(buffer, buffer.length);
 
                 // Get request
-                String receivedData = getRequest(requestPacket, serverSocket);
+                String receivedData = getRequest(client, serverSocket);
 
                 String[] dataArr = receivedData.split(" ");
                 String file = dataArr[1];
@@ -43,11 +43,11 @@ public class Server {
                     response = String.format("OK %s %d %d", file, f.length(), threadSocket.getPort());
 
                     // Create thread with new socket and file
-                    new Thread(() -> sendFile(f, threadSocket)).start();
+                    new Thread(() -> sendFile(f, client, threadSocket)).start();
                 }
 
                 // Send a response back to the client
-                sendResponse(response, requestPacket, serverSocket);
+                sendResponse(response, client, serverSocket);
 
                 // Repeat
             }
@@ -98,7 +98,50 @@ public class Server {
         }    
     }
 
-    private static void sendFile(File file, DatagramSocket socket){
+    private static void sendFile(File file, DatagramPacket client, DatagramSocket socket){
         System.out.println("Thread was made");
+        boolean get = true;
+
+        while(get){
+            // Get download request
+            String request = getRequest(client, socket);
+            String[] dataArr = request.split(" ");
+
+            // Check 3rd value for CLOSE or GET
+            String operation = dataArr[3];
+
+            // Perform Operation
+            String response = "";
+
+            if(operation.equals("GET")){
+                int start = Integer.parseInt(dataArr[4]);
+                int end = Integer.parseInt(dataArr[6]);
+
+                // Send file data back
+                int startPosition = start; // Read from the 11th byte
+                int bytesToRead = end - start;
+
+                try (RandomAccessFile randFile = new RandomAccessFile(file.getName(), "r")) {
+                    randFile.seek(startPosition);
+
+                    byte[] buffer = new byte[bytesToRead];
+                    int bytesRead = randFile.read(buffer);
+
+                    if (bytesRead != -1) {
+                        String content = new String(buffer, 0, bytesRead);
+                        response = String.format("FILE %s OK START %d END %d DATA %s", file.getName(), start, end, content);
+                        sendResponse(response, client, socket);
+                    } else {
+                        System.out.println("End of file reached before reading any bytes.");
+                    }
+                }
+                catch(Exception e){}
+            }
+            else{
+                get = false;
+                response = String.format("FILE %s CLOSE_OK", file.getName());
+                sendResponse(response, client, socket);
+            }
+        }
     }
 }
