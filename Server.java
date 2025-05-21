@@ -1,7 +1,8 @@
 import java.io.*;
 import java.net.*;
 import java.util.Random;
-
+import java.util.Base64;
+import java.util.Arrays;
 
 public class Server {
     public static void main(String[] args) {
@@ -126,8 +127,10 @@ public class Server {
                     int bytesRead = randFile.read(buffer);
 
                     if (bytesRead != -1) {
-                        String content = new String(buffer, 0, bytesRead);
-                        response = String.format("FILE %s OK START %d END %d DATA %s", file, start, end, content);
+                        byte[] validBytes = Arrays.copyOf(buffer, bytesRead);
+                        String encodedContent = Base64.getEncoder().encodeToString(validBytes);
+
+                        response = String.format("FILE %s OK START %d END %d DATA %s", file, start, end, encodedContent);
                         sendResponse(response, client, socket);
                     } else {
                         System.out.println("End of file reached before reading any bytes.");
