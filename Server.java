@@ -25,23 +25,16 @@ public class Server {
             byte[] buffer = new byte[1024];
             while (true) {
                 DatagramPacket requestPacket = new DatagramPacket(buffer, buffer.length);
-                serverSocket.receive(requestPacket);
 
-                String receivedData = new String(requestPacket.getData(), 0, requestPacket.getLength());
-                System.out.println("Received file from client: " + receivedData);
+                // Get request
+                String receivedData = getRequest(requestPacket, serverSocket);
 
-                // Process the date and calculate the weekday
                 String[] dataArr = receivedData.split(" ");
                 String file = dataArr[1];
                 String response = processFile(file);
 
                 // Send the response back to the client
-                byte[] responseData = response.getBytes();
-                InetAddress clientAddress = requestPacket.getAddress();
-                int clientPort = requestPacket.getPort();
-                DatagramPacket responsePacket = new DatagramPacket(responseData, responseData.length, clientAddress, clientPort);
-                serverSocket.send(responsePacket);
-                System.out.println("Response sent to client: " + response);
+                sendResponse(response, requestPacket, serverSocket);
             }
         } catch (IOException e) {
             System.out.println("Server error: " + e.getMessage());
@@ -63,5 +56,33 @@ public class Server {
         } catch (Exception e) {
             return "Invalid date format. Use YYYY-MM-DD.";
         }
+    }
+
+    private static String getRequest(DatagramPacket requestPacket, DatagramSocket serverSocket){
+        try{
+            serverSocket.receive(requestPacket);
+            String receivedData = new String(requestPacket.getData(), 0, requestPacket.getLength());
+            System.out.println("Received file from client: " + receivedData);
+            return receivedData;
+        }
+        catch(Exception e){
+            return "ERR GET Request Error";
+        }
+    }
+
+    private static void sendResponse(String response, DatagramPacket client, DatagramSocket serverSocket){
+        try{
+            // Send the response back to the client
+            byte[] responseData = response.getBytes();
+            InetAddress clientAddress = client.getAddress();
+            int clientPort = client.getPort();
+            DatagramPacket responsePacket = new DatagramPacket(responseData, responseData.length, clientAddress, clientPort);
+            serverSocket.send(responsePacket);
+            System.out.println("Response sent to client: " + response);
+        }
+        catch(Exception e){
+
+        }
+
     }
 }
