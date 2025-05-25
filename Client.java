@@ -36,10 +36,10 @@ public class Client {
                 String response = getResponse(clientSocket);
                 String[] dataArr = response.split(" ");
                 int size = Integer.parseInt(dataArr[3]);
-                port = Integer.parseInt(dataArr[5]);
+                int newPort = Integer.parseInt(dataArr[5]);
 
                 // Depending on response go download the file
-                downloadFile(file, size, clientSocket, port);
+                downloadFile(file, size, clientSocket, newPort);
             }
 
             scanner.close();
@@ -112,5 +112,8 @@ public class Client {
 
         request = String.format("FILE %s CLOSE", file);
         sendRequest(request, client, port);
+
+        // Get Close Response
+        getResponse(client);
     }
 }
