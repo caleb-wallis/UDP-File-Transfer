@@ -4,6 +4,8 @@ import java.io.*;  // Import the File class
 import java.util.Base64;
 
 public class Client {
+    static String hostname;
+
     public static void main(String[] args) {
         // Ensure the correct number of arguments are provided
         if (args.length != 3) {
@@ -11,7 +13,7 @@ public class Client {
             return;
         }
 
-        String hostname = args[0];
+        hostname = args[0];
         int port = Integer.parseInt(args[1]);
         String filename = args[2];
         File downloadFile = new File(filename);
@@ -51,7 +53,6 @@ public class Client {
 
     public static void sendRequest(String request, DatagramSocket clientSocket, int port){
         try{
-            String hostname = "localhost";
             byte[] sendData = request.getBytes();
             InetAddress serverAddress = InetAddress.getByName(hostname);
             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, port);
