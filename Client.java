@@ -120,7 +120,7 @@ public class Client {
             }
 
             // If we lost some bytes resend request
-            if(fileBytes.length != bytesToRead && fileBytes.length + start != size){
+            if(fileBytes.length + start != end && fileBytes.length + start != size){
                 System.out.println("File Bytes != BytesToRead");
                 System.out.println(fileBytes.length);
                 System.out.println(size);

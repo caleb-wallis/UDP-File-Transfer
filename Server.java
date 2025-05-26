@@ -117,7 +117,7 @@ public class Server {
             if(operation.equals("GET")){
                 int start = Integer.parseInt(dataArr[4]);
                 int end = Integer.parseInt(dataArr[6]);
-                int bytesToRead = end - start;
+                int bytesToRead = end - start + 1;
 
                 // Send file data back
                 try (RandomAccessFile randFile = new RandomAccessFile(file, "r")) {
@@ -135,9 +135,7 @@ public class Server {
                         String encodedContent = Base64.getEncoder().encodeToString(actualBytes);
                         //System.out.println(encodedContent.length());
 
-                       // System.out.println("Sending " + bytesRead + " bytes from position " + start);
-
-                        response = String.format("FILE %s OK START %d END %d DATA %s", file, start, start + bytesRead, encodedContent);
+                        response = String.format("FILE %s OK START %d END %d DATA %s", file, start, end, encodedContent);
                         sendResponse(response, client, socket);
 
                     } else {
