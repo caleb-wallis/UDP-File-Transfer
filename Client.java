@@ -56,19 +56,19 @@ public class Client {
             InetAddress serverAddress = InetAddress.getByName(hostname);
             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, port);
             clientSocket.send(sendPacket);
-            System.out.println("Request sent to server: " + request);
+            //System.out.println("Request sent to server: " + request);
         }
         catch(Exception e){System.out.println(e);}
     }
 
     public static String getResponse(DatagramSocket clientSocket){
         try{
-            byte[] receiveData = new byte[1000];
+            byte[] receiveData = new byte[2000];
             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
             clientSocket.receive(receivePacket);
             String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
 
-            System.out.println("Response from server " + response);
+            //System.out.println("Response from server " + response);
             return response;
         }
         catch(Exception e){System.out.println(e);}
@@ -95,19 +95,28 @@ public class Client {
             //String content = dataArr[8];
 
             // decode into String from encoded format
-            byte[] actualByte = Base64.getDecoder().decode(dataArr[8]);
-            String content = new String(actualByte);
+            byte[] fileBytes = Base64.getDecoder().decode(dataArr[8]);
+            System.out.println(fileBytes.length);
+            //String content = new String(actualByte);
 
             // Write to file
             try (RandomAccessFile randFile = new RandomAccessFile("COPY" + file, "rw")) {
+                // randFile.seek(start);
+                // randFile.writeBytes(content);
+
+                // Write raw bytes to file
                 randFile.seek(start);
-                randFile.writeBytes(content);
+                randFile.write(fileBytes);
+                        
+                // Update start based on actual bytes written
+                start += fileBytes.length;            
+                end += fileBytes.length;
             }
             catch(Exception e){}
 
             // Increment start and end
-            start = end;
-            end +=  bytesToRead;
+            //start += fileBytes.length; //end;
+            //end +=  bytesToRead;
         }
 
         request = String.format("FILE %s CLOSE", file);
