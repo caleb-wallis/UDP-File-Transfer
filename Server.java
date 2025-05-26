@@ -61,7 +61,7 @@ public class Server {
         try{
             serverSocket.receive(requestPacket);
             String request = new String(requestPacket.getData(), 0, requestPacket.getLength());
-            System.out.println("Request from client: " + request);
+           // System.out.println("Request from client: " + request);
             return request;
         }
         catch(Exception e){
@@ -77,7 +77,7 @@ public class Server {
             int clientPort = client.getPort();
             DatagramPacket responsePacket = new DatagramPacket(responseData, responseData.length, clientAddress, clientPort);
             serverSocket.send(responsePacket);
-            System.out.println("Response sent to client: " + response);
+           // System.out.println("Response sent to client: " + response);
         }
         catch(Exception e){
 
@@ -127,11 +127,19 @@ public class Server {
                     int bytesRead = randFile.read(buffer);
 
                     if (bytesRead != -1) {
-                        byte[] validBytes = Arrays.copyOf(buffer, bytesRead);
-                        String encodedContent = Base64.getEncoder().encodeToString(validBytes);
+                        byte[] actualBytes = new byte[bytesRead];
+                        //System.out.println(actualBytes.length);
+                        System.arraycopy(buffer, 0, actualBytes, 0, bytesRead);
+                        
+                        // Encode file bytes as Base64 for safe transmission
+                        String encodedContent = Base64.getEncoder().encodeToString(actualBytes);
+                        //System.out.println(encodedContent.length());
 
-                        response = String.format("FILE %s OK START %d END %d DATA %s", file, start, end, encodedContent);
+                       // System.out.println("Sending " + bytesRead + " bytes from position " + start);
+
+                        response = String.format("FILE %s OK START %d END %d DATA %s", file, start, start + bytesRead, encodedContent);
                         sendResponse(response, client, socket);
+
                     } else {
                         System.out.println("End of file reached before reading any bytes.");
                     }
