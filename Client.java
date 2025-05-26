@@ -78,11 +78,15 @@ public class Client {
 
 
     private static void downloadFile(String file, int size, DatagramSocket client, int port){
+        String request;
+
         int bytesToRead = 1000;
         int start = 0;
-        int end = bytesToRead;
+        int end = 999;
 
-        String request;
+        if(size < end){
+            end = size;
+        }
 
         while(start < size){
             // Send request 
@@ -92,31 +96,48 @@ public class Client {
             // Get response
             String response = getResponse(client);
             String[] dataArr = response.split(" ");
-            //String content = dataArr[8];
+
+            String recivedFile = dataArr[1];
+            int recievedStart = Integer.parseInt(dataArr[4]);
+            int recievedEnd = Integer.parseInt(dataArr[6]);
 
             // decode into String from encoded format
             byte[] fileBytes = Base64.getDecoder().decode(dataArr[8]);
-            System.out.println(fileBytes.length);
-            //String content = new String(actualByte);
+
+            // DO CHECKS THAT WE RECIEVED CORRECT PACKET
+
+            // If file is not the same don't write the data
+            if(!file.equals(recivedFile)){
+                System.out.println("File was different to response");
+                continue;
+            }
+
+            // If start and end are not the same as the recieved start and ends
+            if(start != recievedStart || end != recievedEnd){
+                System.out.println("Start or End was different to response");
+                System.out.println(response);
+                continue;
+            }
+
+            // If we lost some bytes resend request
+            if(fileBytes.length != bytesToRead && fileBytes.length + start != size){
+                System.out.println("File Bytes != BytesToRead");
+                System.out.println(fileBytes.length);
+                System.out.println(size);
+                continue;
+            }
 
             // Write to file
             try (RandomAccessFile randFile = new RandomAccessFile("COPY" + file, "rw")) {
-                // randFile.seek(start);
-                // randFile.writeBytes(content);
-
                 // Write raw bytes to file
                 randFile.seek(start);
                 randFile.write(fileBytes);
-                        
-                // Update start based on actual bytes written
-                start += fileBytes.length;            
-                end += fileBytes.length;
             }
             catch(Exception e){}
 
             // Increment start and end
-            //start += fileBytes.length; //end;
-            //end +=  bytesToRead;
+            start += bytesToRead;
+            end += bytesToRead;
         }
 
         request = String.format("FILE %s CLOSE", file);
