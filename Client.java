@@ -31,11 +31,8 @@ public class Client {
                 String file = scanner.nextLine();
                 String request = String.format("DOWNLOAD %s", file);
 
-                // Send download request to the server
-                sendRequest(request, clientSocket, port);
-
-                // Receive the response from the server
-                String response = getResponse(clientSocket);
+                // Send download request to the server and receive response
+                String response = sendAndReceive(request, clientSocket, port);
                 String[] dataArr = response.split(" ");
                 int size = Integer.parseInt(dataArr[3]);
                 int newPort = Integer.parseInt(dataArr[5]);
@@ -62,47 +59,42 @@ public class Client {
         catch(Exception e){System.out.println(e);}
     }
 
-    // public static String getResponse(DatagramSocket clientSocket){
-    //     try{
-    //         byte[] receiveData = new byte[2000];
-    //         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-    //         clientSocket.receive(receivePacket);
-    //         String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+    public static String getResponse(DatagramSocket clientSocket) throws SocketTimeoutException, IOException {
+        byte[] receiveData = new byte[2000];
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        clientSocket.receive(receivePacket);
+        String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+        //System.out.println("Response from server " + response);
+        return response;
+    }
 
-    //         //System.out.println("Response from server " + response);
-    //         return response;
-    //     }
-    //     catch(Exception e){System.out.println(e);}
-
-    //     return null;
-    // }
-
-    public static String getResponse(DatagramSocket clientSocket){
+    private static String sendAndReceive(String request, DatagramSocket clientSocket, int port){
         int maxRetries = 5;
-        int timeoutMillis = 1000; // Initial timeout: 1 second
+        int timeoutMillis = 1000;
         int attempts = 0;
 
         while (attempts < maxRetries) {
             try{
-                clientSocket.setSoTimeout(timeoutMillis); // Set current timeout
-
-                byte[] receiveData = new byte[2000];
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                clientSocket.receive(receivePacket); // Wait for response
-                String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
-
-                //System.out.println("Response from server " + response);
-                return response;
+                // Send Request
+                sendRequest(request, clientSocket, port);
+                // Set current timeout
+                clientSocket.setSoTimeout(timeoutMillis); 
+                // Get Response
+                return getResponse(clientSocket);
             } catch (SocketTimeoutException e) {
                 System.out.println("Timeout occurred (attempt " + (attempts + 1) + ", timeout " + timeoutMillis + "ms). Retrying...");
                 timeoutMillis *= 2; // Double the timeout
                 attempts++;
+            } catch (IOException e) {
+                System.out.println("I/O error: " + e.getMessage() + ". Retrying...");
+                attempts++;
             } catch (Exception e) {
-                System.out.println("Error receiving packet: " + e);
+                System.out.println("Unexpected Error: " + e);
                 return null;
             }
-        }
 
+        }
+        // If fail then throw exception
         System.out.println("No response after " + maxRetries + " attempts.");
         return null;
     }
@@ -114,43 +106,40 @@ public class Client {
         int start = 0;
         int end = 999;
 
-        if(size < end){
-            end = size;
-        }
-
         while(start < size){
-            // Send request 
+            if(size < end){
+                end = size -1;
+            }
+
+            // Send get request and get response
             request = String.format("FILE %s GET START %d END %d", file, start, end);
-            sendRequest(request, client, port);
-        
-            // Get response
-            String response = getResponse(client);
+            String response = sendAndReceive(request, client, port);
             String[] dataArr = response.split(" ");
 
-            String recivedFile = dataArr[1];
-            int recievedStart = Integer.parseInt(dataArr[4]);
-            int recievedEnd = Integer.parseInt(dataArr[6]);
+            String receivedFile = dataArr[1];
+            int receivedStart = Integer.parseInt(dataArr[4]);
+            int receivedEnd = Integer.parseInt(dataArr[6]);
 
             // decode into String from encoded format
             byte[] fileBytes = Base64.getDecoder().decode(dataArr[8]);
 
-            // DO CHECKS THAT WE RECIEVED CORRECT PACKET
+            // DO CHECKS THAT WE RECEIVED CORRECT PACKET
 
             // If file is not the same don't write the data
-            if(!file.equals(recivedFile)){
+            if(!file.equals(receivedFile)){
                 System.out.println("File was different to response");
                 continue;
             }
 
-            // If start and end are not the same as the recieved start and ends
-            if(start != recievedStart || end != recievedEnd){
+            // If start and end are not the same as the received start and ends
+            if(start != receivedStart || end != receivedEnd){
                 System.out.println("Start or End was different to response");
                 System.out.println(response);
                 continue;
             }
 
             // If we lost some bytes resend request
-            if(fileBytes.length + start != end && fileBytes.length + start != size){
+            if(fileBytes.length != bytesToRead && fileBytes.length + start != size){
                 System.out.println("File Bytes != BytesToRead");
                 System.out.println(fileBytes.length);
                 System.out.println(size);
@@ -170,10 +159,8 @@ public class Client {
             end += bytesToRead;
         }
 
+        // Send close request and get response
         request = String.format("FILE %s CLOSE", file);
-        sendRequest(request, client, port);
-
-        // Get Close Response
-        getResponse(client);
+        String response = sendAndReceive(request, client, port);
     }
 }
