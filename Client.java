@@ -62,21 +62,50 @@ public class Client {
         catch(Exception e){System.out.println(e);}
     }
 
+    // public static String getResponse(DatagramSocket clientSocket){
+    //     try{
+    //         byte[] receiveData = new byte[2000];
+    //         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+    //         clientSocket.receive(receivePacket);
+    //         String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+
+    //         //System.out.println("Response from server " + response);
+    //         return response;
+    //     }
+    //     catch(Exception e){System.out.println(e);}
+
+    //     return null;
+    // }
+
     public static String getResponse(DatagramSocket clientSocket){
-        try{
-            byte[] receiveData = new byte[2000];
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            clientSocket.receive(receivePacket);
-            String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+        int maxRetries = 5;
+        int timeoutMillis = 1000; // Initial timeout: 1 second
+        int attempts = 0;
 
-            //System.out.println("Response from server " + response);
-            return response;
+        while (attempts < maxRetries) {
+            try{
+                clientSocket.setSoTimeout(timeoutMillis); // Set current timeout
+
+                byte[] receiveData = new byte[2000];
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                clientSocket.receive(receivePacket); // Wait for response
+                String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+
+                //System.out.println("Response from server " + response);
+                return response;
+            } catch (SocketTimeoutException e) {
+                System.out.println("Timeout occurred (attempt " + (attempts + 1) + ", timeout " + timeoutMillis + "ms). Retrying...");
+                timeoutMillis *= 2; // Double the timeout
+                attempts++;
+            } catch (Exception e) {
+                System.out.println("Error receiving packet: " + e);
+                return null;
+            }
         }
-        catch(Exception e){System.out.println(e);}
 
+        System.out.println("No response after " + maxRetries + " attempts.");
         return null;
     }
-
 
     private static void downloadFile(String file, int size, DatagramSocket client, int port){
         String request;
