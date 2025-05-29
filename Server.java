@@ -94,14 +94,16 @@ public class Server {
             return socket;
         }
         catch(Exception e){
-            System.out.println(e);
-            return null;   
+            System.out.println("Issue Creating Socket");
+            System.out.println("Retrying...");
+            return createSocket();  
         }    
     }
 
     private static void sendFile(String file, DatagramPacket client, DatagramSocket socket){
-        System.out.println("Thread was made");
+        System.out.println("Sending: " + file);
         boolean get = true;
+        String response = "";
 
         while(get){
             // Get download request
@@ -112,8 +114,6 @@ public class Server {
             String operation = dataArr[2];
 
             // Perform Operation
-            String response = "";
-
             if(operation.equals("GET")){
                 int start = Integer.parseInt(dataArr[4]);
                 int end = Integer.parseInt(dataArr[6]);
@@ -142,13 +142,22 @@ public class Server {
                         System.out.println("End of file reached before reading any bytes.");
                     }
                 }
-                catch(Exception e){}
+                catch(Exception e){
+                    System.out.println("Couldn't read or access file");
+                    System.out.println("Retrying...");
+                }
             }
             else{
                 get = false;
-                response = String.format("FILE %s CLOSE_OK", file);
-                sendResponse(response, client, socket);
             }
         }
+        // Get request to close
+        String request = getRequest(client, socket);
+        // Send close response to client
+        response = String.format("FILE %s CLOSE_OK", file);
+        sendResponse(response, client, socket);
+        // Close socket
+        System.out.println("Closed Socket on Port: " + socket.getLocalPort());
+        socket.close();
     }
 }
