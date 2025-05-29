@@ -43,11 +43,14 @@ public class Client {
                 // Send download request to the server and receive response
                 String response = sendAndReceive(request, clientSocket, port);
                 String[] dataArr = response.split(" ");
-                int size = Integer.parseInt(dataArr[3]);
-                int newPort = Integer.parseInt(dataArr[5]);
 
                 // Depending on response go download the file
-                downloadFile(file, size, clientSocket, newPort);
+                String download = dataArr[0];
+                if(download.equals("OK")){
+                    int size = Integer.parseInt(dataArr[3]);
+                    int newPort = Integer.parseInt(dataArr[5]);
+                    downloadFile(file, size, clientSocket, newPort);
+                }
             }
 
             scanner.close();
