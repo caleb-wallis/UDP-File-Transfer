@@ -2,7 +2,6 @@ import java.io.*;
 import java.net.*;
 import java.util.Random;
 import java.util.Base64;
-import java.util.Arrays;
 
 /**
  * UDP Server that listens for file download requests from clients.
