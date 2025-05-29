@@ -21,7 +21,7 @@ public class Client {
         // Create a UDP socket
         try (DatagramSocket clientSocket = new DatagramSocket()) {
 
-            System.out.println("Client is ready to send data.");
+            System.out.println("Client is ready to download files");
 
             // Request to download files from filename
             Scanner scanner = new Scanner(downloadFile);
@@ -89,14 +89,12 @@ public class Client {
                 System.out.println("I/O error: " + e.getMessage() + ". Retrying...");
                 attempts++;
             } catch (Exception e) {
-                System.out.println("Unexpected Error: " + e);
-                return null;
-            }
-
+                System.out.println("Unkown error: " + e.getMessage() + ". Retrying...");
+                attempts++;
+            }                  
         }
         // If fail then throw exception
-        System.out.println("No response after " + maxRetries + " attempts.");
-        return null;
+        throw new RuntimeException("No response after " + maxRetries + " attempts.");
     }
 
     private static void downloadFile(String file, int size, DatagramSocket client, int port){
@@ -142,6 +140,7 @@ public class Client {
             if(fileBytes.length != bytesToRead && fileBytes.length + start != size){
                 System.out.println("File Bytes != BytesToRead");
                 System.out.println(fileBytes.length);
+                System.out.println(start);
                 System.out.println(size);
                 continue;
             }
@@ -152,7 +151,12 @@ public class Client {
                 randFile.seek(start);
                 randFile.write(fileBytes);
             }
-            catch(Exception e){}
+            catch(Exception e){
+                System.out.println("Couldn't write to file");
+                break;
+            }
+
+            System.out.println(String.format("File: %s, Downloaded: %d%%", file, (end*100)/(size-1)));
 
             // Increment start and end
             start += bytesToRead;
