@@ -3,9 +3,18 @@ import java.util.Scanner;
 import java.io.*;  // Import the File class
 import java.util.Base64;
 
+/**
+ * UDP Client that reads file names from input, sends download requests to the server,
+ * and retrieves file contents in chunks with error handling and retries.
+ */
 public class Client {
     static String hostname;
 
+    /**
+     * Entry point of the client application.
+     *
+     * @param args command-line arguments: <hostname> <port> <filename>
+     */
     public static void main(String[] args) {
         // Ensure the correct number of arguments are provided
         if (args.length != 3) {
@@ -48,6 +57,13 @@ public class Client {
         }
     }
 
+    /**
+     * Sends a UDP request to the server.
+     *
+     * @param request The string message to send.
+     * @param clientSocket The DatagramSocket used for sending.
+     * @param port The destination port number.
+     */
     public static void sendRequest(String request, DatagramSocket clientSocket, int port){
         try{
             byte[] sendData = request.getBytes();
@@ -59,6 +75,12 @@ public class Client {
         catch(Exception e){System.out.println(e);}
     }
 
+    /**
+     * Waits to receive a response from the server over UDP.
+     *
+     * @param clientSocket The DatagramSocket used for communication.
+     * @return The string content of the response from the server.
+     */
     public static String getResponse(DatagramSocket clientSocket) throws SocketTimeoutException, IOException {
         byte[] receiveData = new byte[2000];
         DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -68,6 +90,14 @@ public class Client {
         return response;
     }
 
+    /**
+     * Sends a request and waits for a response using retries and exponential backoff on timeout.
+     *
+     * @param request The message to send.
+     * @param clientSocket The UDP socket used for communication.
+     * @param port The port to send the request to.
+     * @return The response string from the server.
+     */
     private static String sendAndReceive(String request, DatagramSocket clientSocket, int port){
         int maxRetries = 5;
         int timeoutMillis = 1000;
@@ -97,6 +127,14 @@ public class Client {
         throw new RuntimeException("No response after " + maxRetries + " attempts.");
     }
 
+    /**
+     * Downloads a file in chunks using UDP, verifies integrity, and writes it.
+     *
+     * @param file The filename to download.
+     * @param size The total size of the file.
+     * @param client The DatagramSocket used for communication.
+     * @param port The port to communicate with.
+     */
     private static void downloadFile(String file, int size, DatagramSocket client, int port){
         String request;
 
@@ -131,8 +169,7 @@ public class Client {
 
             // If start and end are not the same as the received start and ends
             if(start != receivedStart || end != receivedEnd){
-                System.out.println("Start or End was different to response");
-                System.out.println(response);
+                System.out.println("Start or End was different to what was sent");
                 continue;
             }
 

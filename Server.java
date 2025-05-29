@@ -4,7 +4,17 @@ import java.util.Random;
 import java.util.Base64;
 import java.util.Arrays;
 
+/**
+ * UDP Server that listens for file download requests from clients.
+ * Creates a new socket and thread for each file transfer to handle concurrency and port separation.
+ */
 public class Server {
+
+    /**
+     * Entry point of the server application.
+     *
+     * @param args Command-line arguments: <port> to bind the server socket.
+     */
     public static void main(String[] args) {
         // Ensure the correct number of arguments are provided
         if (args.length != 1) {
@@ -57,6 +67,13 @@ public class Server {
         }
     }
 
+    /**
+     * Receives a UDP packet from a client and extracts the request string.
+     *
+     * @param requestPacket The packet to be filled with client data.
+     * @param serverSocket The server socket listening for incoming packets.
+     * @return The request string sent by the client, or an error message.
+     */
     private static String getRequest(DatagramPacket requestPacket, DatagramSocket serverSocket){
         try{
             serverSocket.receive(requestPacket);
@@ -69,6 +86,13 @@ public class Server {
         }
     }
 
+    /**
+     * Sends a response string back to the client using the given socket.
+     *
+     * @param response The response message to send.
+     * @param client The DatagramPacket containing client address and port.
+     * @param serverSocket The socket used to send the response.
+     */
     private static void sendResponse(String response, DatagramPacket client, DatagramSocket serverSocket){
         try{
             // Send the response back to the client
@@ -84,6 +108,11 @@ public class Server {
         }
     }
 
+    /**
+     * Creates a new DatagramSocket on a randomly chosen port in a predefined range.
+     *
+     * @return A new bound DatagramSocket instance.
+     */
     private static DatagramSocket createSocket(){
         try{
             Random r = new Random();
@@ -100,6 +129,14 @@ public class Server {
         }    
     }
 
+    /**
+     * Sends chunks of the requested file to the client.
+     * Encodes file data in Base64 for safe transmission over UDP.
+     *
+     * @param file The name of the file to send.
+     * @param client The client DatagramPacket with address and port.
+     * @param socket The DatagramSocket dedicated to this transfer session.
+     */
     private static void sendFile(String file, DatagramPacket client, DatagramSocket socket){
         System.out.println("Sending: " + file);
         boolean get = true;
